@@ -29,6 +29,7 @@ public class View {
     JButton btnModifier;
     JButton btnSupprimer;
     JButton btnQuitter;
+    JButton btnSurprise;
 
     //-------- JTable déclaration --------//
     JTable tabNotes;
@@ -248,10 +249,17 @@ public class View {
                 ex.printStackTrace();
             }
         });
-        //btnQuitterAction();
+        btnSurprise= new JButton("100% ?");
+        btnSurprise.setPreferredSize(dimBtn);
+        btnSurprise.addActionListener(e -> btnSurpriseAction());
 
+        panBas.add(btnSurprise);
         panBas.add(btnQuitter);
         frame.add(panBas,BorderLayout.SOUTH);
+    }
+
+    private void btnSurpriseAction() {
+        JOptionPane.showMessageDialog(frame, dessin());
     }
 
     //---------- Action Listener ---------//
@@ -291,6 +299,10 @@ public class View {
         mdlStats.setValueAt(mdlNotes.getRowCount(), 3, 1);
     }
 
+    /**
+     * Méthode permettant le chargement des données du fichier texte
+     * @throws IOException
+     */
     private void ChargementDonnee() throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader("notes.txt"));
         String[] tab; // tableau contenant les données
@@ -300,21 +312,24 @@ public class View {
             tab = ligne.split(" ");
             mdlNotes.addRow(tab);
         }
-
         reader.close();
     }
 
+    /**
+     * Méthode permettant la sauvegarde des données dans le ficher texte lors de la fermeture
+     * @throws IOException
+     */
     private void sauvegardeData() throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter("notes.txt", false));
-        String data; // String à enregistrer dans le fichier
+        String data; // String des données/data à enregistrer dans le fichier
 
-        for (int i  = 0; i < mdlNotes.getRowCount(); i++) {
-            for (int j = 0; j < 5; j++) {
-                data = valueToString(mdlNotes, i, j);
+        for (int iLigne  = 0; iLigne < mdlNotes.getRowCount(); iLigne++) {
+            for (int iCol = 0; iCol < 5; iCol++) {
+                data = mdlNotes.getValueAt(iLigne, iCol).toString();
                 writer.write(data);
-                if (j < 4)
+                if (iCol < 4)
                     writer.write(" ");
-                else if (i < mdlNotes.getRowCount() - 1)
+                else if (iLigne < mdlNotes.getRowCount() - 1)
                     writer.newLine();
             }
         }
@@ -327,15 +342,15 @@ public class View {
      */
     public void tabNotesSelectionChange() {
         int ligne = tabNotes.getSelectedRow();
-        txfDA.setText(valueToString(mdlNotes, ligne, 0));
-        txfEx1.setText(valueToString(mdlNotes, ligne, 1));
-        txfEx2.setText(valueToString(mdlNotes, ligne, 2));
-        txfTP1.setText(valueToString(mdlNotes, ligne, 3));
-        txfTP2.setText(valueToString(mdlNotes, ligne, 4));
+        txfDA.setText(mdlNotes.getValueAt(ligne, 0).toString());
+        txfEx1.setText(mdlNotes.getValueAt(ligne, 1).toString());
+        txfEx2.setText(mdlNotes.getValueAt(ligne, 2).toString());
+        txfTP1.setText(mdlNotes.getValueAt(ligne, 3).toString());
+        txfTP2.setText(mdlNotes.getValueAt(ligne, 4).toString());
     }
 
     /**
-     *
+     *Bouton Quitter qui donne le choix à l'utilisateur d'enregistré ou non les données présente
      * @throws IOException
      */
     private void btnQuitterAction() throws IOException {
@@ -351,6 +366,9 @@ public class View {
             }
         }
 
+    /**
+     *Bouton qui supprime une ligne sélectionnée du tableau de notes et mets à jour le tableau de statistique.
+     */
     private void btnSupprimerAction() {
         int ligne = tabNotes.getSelectedRow();
 
@@ -367,13 +385,15 @@ public class View {
             txfTP2.setText(null);
             majStats();
         }
-
     }
 
+    /**
+     *Bouton permettant de modifier une ligne sélectionnée et de mettre à jour les statistiques.
+     */
     private void btnModifierAction() {
         int[][] tab = Utils.convertT2D(mdlNotes);
         int ligne= tabNotes.getSelectedRow(); //ligne selectionnée
-        int da;
+        int da; //numéro du DA à vérifier
         String[] tabString = new String[]{ //tableau d'information
 
                 txfDA.getText(),
@@ -400,26 +420,29 @@ public class View {
                     mdlNotes.setValueAt(tabString[i], ligne, i);
 
                 majStats();
-
             }
         }
-
     }
 
+    /**
+     *Détermine si true ou false, une donnée inscrite est valide.
+     * @param tab tableau de données à envoyer en arguments dans la méthode.
+     * @return retourne si les arguments sont valides ou non
+     */
     public static boolean donneeInvalide(String[] tab) {
         boolean invalide = false; // si l'entrée est invalide
         int i = 0; // int pour la boucle
 
         while (i < tab.length && !invalide) {
             try {
-                // Vérifier si c'est un nombre
+                // Vérifier si c'est un entier
                 int test = Integer.parseInt(tab[i]);
 
-                // Vérifier si le nombre n'est pas positif
+                // Vérifier si le nombre est positif
                 if (test < 0)
                     invalide = true;
 
-                // Vérifier si le nombre n'est pas entre 0 et 100 (seulement si c'est pas la 1e entrée)
+                // Vérifier si le nombre n'est pas entre 0 et 100
                 if (i != 0 && test > 100)
                     invalide = true;
 
@@ -428,14 +451,13 @@ public class View {
                 invalide = true;
             }
         }
-
         return invalide;
     }
 
-    public static String valueToString(DefaultTableModel model, int ligne, int col) {
-        return model.getValueAt(ligne, col).toString();
-    }
-
+    /**
+     *Bouton permettant d'ajouter des données au tableau et qui mets à jour les statistiques en conséquences
+     * @throws IOException
+     */
     private void btnAjouterAction() throws IOException {
         int[][] tab = Utils.convertT2D(mdlNotes); // tableau 2d des notes
         String[] tabch = new String[]{ // tableau de l'information
@@ -447,13 +469,16 @@ public class View {
         };
         // Entrée invalide
         if (donneeInvalide(tabch))
-            JOptionPane.showMessageDialog(frame, "Entrée invalide.\nAssurer que les notes sont entre 0 et 100");
+            JOptionPane.showMessageDialog(frame,
+                    "Entrée invalide.\n" +
+                    "Assurer que les notes sont entre 0 et 100");
         else {
             int da = Integer.parseInt(tabch[0]);
 
             // DA existant dans une autre entrée
             if (Utils.isPresentCol(tab, da, 0)) {
-                JOptionPane.showMessageDialog(frame, "Le DA" + da + " existe déjà");
+                JOptionPane.showMessageDialog(frame,
+                        "Le DA" + da + " existe déjà");
             } else {
                 mdlNotes.addRow(tabch);
                 tabNotes.setRowSelectionInterval(mdlNotes.getRowCount() - 1, mdlNotes.getRowCount() - 1);
@@ -462,11 +487,62 @@ public class View {
         }
     }
 
+    /**
+     * Méthode inutile qui me rapporte rien de plus, mais c'est l'habitude qui embarque :)
+     * @return retourne un beau petit Snoopy en ASCII art
+     */
+    public static String dessin(){
+        String dessin =
+                """ 
+                
+                        ************ 
+                       *****************
+                       ********************
+                        ********************
+                         ********
+                          ********                 *********
+                           ***********              *********
+              *********      ****       *            *********
+            *            ***               *          *********
+          *                       **         *          ********
+         *                         **         *       ***********
+        *        *****              **      *********************
+       *        *******                     *********************
+       *         *****                         *****************
+       *                                        *
+        *     *               *                 *
+         *     *             *                  *
+           *    *           *                  *
+             *    *       *                   *
+                *   *****                   *
+       ***               *     ************
+      *   *            *      *
+      *   *          *********          ***
+  ****    **********        *          *   *
+ *               *         *           *   *
+*              *           *************    ****
+*      *******                                  *
+*      *    *                                    *
+  *****    *              *****************      *
+          *               *               *      *
+         *      ****      *                *****
+         *    *      **   *
+         *   *         ** *
+      *** *  *            *
+     *    *   *            *    *
+      *    *   *           *   * *
+       *     *  *          *  *  *
+         *     * *         *  *  *
+          *       *        *  *  *
+            *       *    *****   *
+               *      * * *****  *
+
+     """;
+        return dessin;
+    }
 
     public static void main(String[] args) throws IOException {
 
         View v = new View();
-
     }
-
 }
